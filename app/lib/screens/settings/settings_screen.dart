@@ -1,0 +1,298 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+import '../../constants.dart';
+import '../../services/permission_service.dart';
+import '../../services/update_service.dart';
+import '../../state/app_settings.dart';
+import '../../state/providers.dart';
+
+class SettingsScreen extends ConsumerStatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBindingObserver {
+  Map<ReliabilityPermission, bool> _permissionStatus = {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshPermissions();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshPermissions();
+  }
+
+  Future<void> _refreshPermissions() async {
+    final status = await ref.read(permissionServiceProvider).statusSnapshot();
+    if (mounted) setState(() => _permissionStatus = status);
+  }
+
+  Future<void> _forgetDevice() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Forget this device?'),
+        content: const Text(
+          'This stops location reporting from this phone and deletes its '
+          'cached encryption key. Your account and any location history '
+          'already on the server are unaffected.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Forget device')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    ref.read(backgroundServiceProvider).invoke('stopService');
+    await ref.read(secureStoreProvider).clear();
+    ref.read(pairingRefreshProvider.notifier).state++;
+
+    if (!mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeModeProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: ListView(
+        children: [
+          const _SectionHeader(title: 'Appearance'),
+          RadioGroup<ThemeMode>(
+            groupValue: themeMode,
+            onChanged: (value) => ref.read(themeModeProvider.notifier).setThemeMode(value ?? themeMode),
+            child: const Column(
+              children: [
+                RadioListTile<ThemeMode>(title: Text('System'), value: ThemeMode.system),
+                RadioListTile<ThemeMode>(title: Text('Light'), value: ThemeMode.light),
+                RadioListTile<ThemeMode>(title: Text('Dark'), value: ThemeMode.dark),
+              ],
+            ),
+          ),
+          const Divider(),
+          _SectionHeader(
+            title: 'Reporting',
+            subtitle: 'Location is checked in every ${reportingInterval.inMinutes} minutes '
+                'while this phone is paired, using a persistent foreground service '
+                '(not Google Play Services).',
+          ),
+          ListTile(
+            leading: const Icon(Icons.smartphone_outlined),
+            title: const Text('Forget this device'),
+            subtitle: const Text('Stops reporting and deletes the local encryption key'),
+            onTap: _forgetDevice,
+          ),
+          const Divider(),
+          const _SectionHeader(
+            title: 'Permissions',
+            subtitle: 'All of these are needed for reliable check-ins and for "play sound" '
+                'to actually ring through Do Not Disturb.',
+          ),
+          _PermissionTile(
+            title: 'Location',
+            description: 'Needed to read this phone\'s GPS/network position.',
+            permission: ReliabilityPermission.location,
+            granted: _permissionStatus[ReliabilityPermission.location] ?? false,
+            onRefresh: _refreshPermissions,
+          ),
+          _PermissionTile(
+            title: 'Background location',
+            description: 'Needed so check-ins keep working while the app is closed.',
+            permission: ReliabilityPermission.backgroundLocation,
+            granted: _permissionStatus[ReliabilityPermission.backgroundLocation] ?? false,
+            onRefresh: _refreshPermissions,
+          ),
+          _PermissionTile(
+            title: 'Notifications',
+            description: 'Required to show the ongoing reporting notification.',
+            permission: ReliabilityPermission.notification,
+            granted: _permissionStatus[ReliabilityPermission.notification] ?? false,
+            onRefresh: _refreshPermissions,
+          ),
+          _PermissionTile(
+            title: 'Alarms & reminders',
+            description: 'Lets the "play sound" alarm engine schedule reliably.',
+            permission: ReliabilityPermission.exactAlarm,
+            granted: _permissionStatus[ReliabilityPermission.exactAlarm] ?? false,
+            onRefresh: _refreshPermissions,
+          ),
+          _PermissionTile(
+            title: 'Do Not Disturb access',
+            description: 'Extra reliability layer so "play sound" is never silenced.',
+            permission: ReliabilityPermission.doNotDisturb,
+            granted: _permissionStatus[ReliabilityPermission.doNotDisturb] ?? false,
+            onRefresh: _refreshPermissions,
+          ),
+          _PermissionTile(
+            title: 'Ignore battery optimization',
+            description: 'Prevents the OS from killing the check-in service to save power.',
+            permission: ReliabilityPermission.batteryOptimization,
+            granted: _permissionStatus[ReliabilityPermission.batteryOptimization] ?? false,
+            onRefresh: _refreshPermissions,
+          ),
+          _PermissionTile(
+            title: 'Full-screen alerts',
+            description: 'Android 14+: lets "play sound" take over the screen, incl. over the lock screen.',
+            permission: ReliabilityPermission.fullScreenAlarm,
+            granted: _permissionStatus[ReliabilityPermission.fullScreenAlarm] ?? false,
+            onRefresh: _refreshPermissions,
+          ),
+          const Divider(),
+          const _SectionHeader(title: 'Updates'),
+          const _UpdatesSection(),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpdatesSection extends ConsumerStatefulWidget {
+  const _UpdatesSection();
+
+  @override
+  ConsumerState<_UpdatesSection> createState() => _UpdatesSectionState();
+}
+
+class _UpdatesSectionState extends ConsumerState<_UpdatesSection> {
+  String? _currentVersion;
+  UpdateCheckResult? _result;
+  bool _checking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_check());
+  }
+
+  Future<void> _check() async {
+    if (!_checking) setState(() => _checking = true);
+    final info = await PackageInfo.fromPlatform();
+    final result = await ref.read(updateServiceProvider).checkForUpdate(info.version);
+    if (!mounted) return;
+    setState(() {
+      _currentVersion = info.version;
+      _result = result;
+      _checking = false;
+    });
+  }
+
+  String get _statusText {
+    if (_checking) return 'Checking for updates…';
+    switch (_result?.status) {
+      case UpdateStatus.updateAvailable:
+        return 'Update available: v${_result!.latestVersion}';
+      case UpdateStatus.upToDate:
+        return 'You\'re up to date';
+      case UpdateStatus.checkFailed:
+      case null:
+        return 'Could not check for updates';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final releaseUrl = _result?.releaseUrl;
+    final showViewRelease = _result?.status == UpdateStatus.updateAvailable && releaseUrl != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_currentVersion != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text('Installed version: $_currentVersion', style: Theme.of(context).textTheme.bodySmall),
+          ),
+        ListTile(
+          title: Text(_statusText),
+          trailing: _checking
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : showViewRelease
+                  ? FilledButton(
+                      onPressed: () => ref.read(updateServiceProvider).openReleasePage(releaseUrl),
+                      child: const Text('View release'),
+                    )
+                  : TextButton(onPressed: _check, child: const Text('Check now')),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+
+  const _SectionHeader({required this.title, this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary),
+          ),
+          if (subtitle != null) Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _PermissionTile extends ConsumerWidget {
+  final String title;
+  final String description;
+  final ReliabilityPermission permission;
+  final bool granted;
+  final VoidCallback onRefresh;
+
+  const _PermissionTile({
+    required this.title,
+    required this.description,
+    required this.permission,
+    required this.granted,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      title: Text(title),
+      subtitle: Text(description),
+      isThreeLine: true,
+      trailing: granted
+          ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+          : TextButton(
+              onPressed: () async {
+                await ref.read(permissionServiceProvider).request(permission);
+                onRefresh();
+              },
+              child: const Text('Open settings'),
+            ),
+    );
+  }
+}

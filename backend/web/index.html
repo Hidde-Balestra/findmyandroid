@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Find My Android</title>
+  <link rel="stylesheet" href="style.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+</head>
+<body>
+  <header>
+    <h1>Find My Android</h1>
+    <p class="tagline">Privacy-first device locator — no Google Play Services, no email/phone stored.</p>
+  </header>
+
+  <main>
+    <section id="login-view">
+      <form id="login-form">
+        <label for="code-input">Account code</label>
+        <input id="code-input" type="text" autocomplete="off" required />
+
+        <label for="totp-input">6-digit code</label>
+        <input id="totp-input" type="text" inputmode="numeric" maxlength="6" autocomplete="off" required />
+
+        <button type="submit">Log in</button>
+        <p id="login-error" class="error"></p>
+      </form>
+      <p class="note">
+        Everything is decrypted in this browser using your account code — the server only ever
+        stores unreadable ciphertext. There is no password reset: if you lose the code, this
+        history is unrecoverable by design.
+      </p>
+    </section>
+
+    <section id="app-view" class="hidden">
+      <div class="toolbar">
+        <button id="logout-button">Log out</button>
+      </div>
+
+      <div id="device-list" class="device-list"></div>
+
+      <div id="device-detail" class="hidden">
+        <h2 id="device-title"></h2>
+        <p id="last-seen"></p>
+        <button id="ring-button">Play sound</button>
+        <p id="ring-status"></p>
+        <div id="map"></div>
+      </div>
+    </section>
+  </main>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script src="crypto.js"></script>
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

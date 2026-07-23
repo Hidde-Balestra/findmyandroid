@@ -1,0 +1,24 @@
+name: location_bridge
+description: "Reads device location via Android's built-in LocationManager (GPS/network), deliberately bypassing Google Play Services / the fused location API."
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: ^3.11.4
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: nl.hiddebalestra.location_bridge
+        pluginClass: LocationBridgePlugin

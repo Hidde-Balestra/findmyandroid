@@ -1,0 +1,8 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Backend: never commit real secrets/credentials.
+backend/api/config.local.php
