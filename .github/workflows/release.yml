@@ -29,6 +29,10 @@ jobs:
         working-directory: packages/location_bridge
         run: flutter pub get
 
+      - name: Install device_admin_bridge plugin dependencies
+        working-directory: packages/device_admin_bridge
+        run: flutter pub get
+
       - name: Install app dependencies
         working-directory: app
         run: flutter pub get
