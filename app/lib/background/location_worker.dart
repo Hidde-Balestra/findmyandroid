@@ -15,13 +15,19 @@ const lastCheckInPrefsKey = 'last_check_in_summary';
 /// Configures the persistent foreground service that reports location every
 /// 5 minutes. A foreground service (not WorkManager) is required because
 /// WorkManager periodic tasks can't run more often than every 15 minutes.
+///
+/// Deliberately does NOT pass a custom `notificationChannelId`: the plugin
+/// only auto-creates the Android notification channel when you let it use
+/// its own default id — supply your own and it skips channel creation
+/// entirely, and posting a foreground notification on a channel that was
+/// never created throws `CannotPostForegroundServiceNotificationException`
+/// and crashes the whole app on service start.
 Future<void> configureBackgroundService(FlutterBackgroundService service) async {
   await service.configure(
     androidConfiguration: AndroidConfiguration(
       onStart: _onStart,
       autoStart: false,
       isForegroundMode: true,
-      notificationChannelId: notificationChannelId,
       initialNotificationTitle: 'Find My Android',
       initialNotificationContent: 'Waiting for the first location check-in…',
       foregroundServiceTypes: const [AndroidForegroundType.location],
