@@ -184,7 +184,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 24),
         const Text(
-          'Scan with an authenticator app (e.g. Aegis, FreeOTP) for the second factor:',
+          'Set up the second factor in an authenticator app (e.g. Aegis, FreeOTP) — '
+          'scan the QR code below, or type this secret in by hand if it can\'t scan:',
+        ),
+        const SizedBox(height: 8),
+        SelectableText(
+          result.totpSecret,
+          style: const TextStyle(fontSize: 18, fontFeatures: [FontFeature.tabularFigures()]),
         ),
         const SizedBox(height: 12),
         Center(

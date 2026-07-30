@@ -24,6 +24,10 @@ class RegisterResult {
     required this.saltBase64,
     required this.totpProvisioningUri,
   });
+
+  /// The raw base32 TOTP secret, for authenticator apps that only support
+  /// typing/pasting a code rather than scanning a QR image.
+  String get totpSecret => Uri.parse(totpProvisioningUri).queryParameters['secret'] ?? '';
 }
 
 class LoginResult {
