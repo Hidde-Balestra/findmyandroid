@@ -169,6 +169,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.0"
+  device_admin_bridge:
+    dependency: "direct main"
+    description:
+      path: "../packages/device_admin_bridge"
+      relative: true
+    source: path
+    version: "0.0.1"
   equatable:
     dependency: transitive
     description:

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Declares the minimum Device Admin policy this app actually uses:
+  watch-login is what makes Android call onPasswordFailed()/onPasswordSucceeded()
+  on SecurityDeviceAdminReceiver. No other policy (wipe data, password
+  quality rules, etc.) is requested.
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <watch-login />
+    </uses-policies>
+</device-admin>

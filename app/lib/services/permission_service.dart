@@ -1,3 +1,4 @@
+import 'package:device_admin_bridge/device_admin_bridge.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -17,12 +18,18 @@ enum ReliabilityPermission {
   batteryOptimization,
   fullScreenAlarm,
   camera,
+  deviceAdmin,
 }
 
 class PermissionService {
   static const _fullScreenIntentChannel = MethodChannel(
     'nl.hiddebalestra.findmyandroid/full_screen_intent',
   );
+
+  final DeviceAdminBridge _deviceAdminBridge;
+
+  PermissionService({DeviceAdminBridge? deviceAdminBridge})
+      : _deviceAdminBridge = deviceAdminBridge ?? DeviceAdminBridge();
 
   Permission? _permissionFor(ReliabilityPermission permission) => switch (permission) {
         ReliabilityPermission.location => Permission.locationWhenInUse,
@@ -34,11 +41,15 @@ class PermissionService {
         ReliabilityPermission.camera => Permission.camera,
         // Not covered by permission_handler; bridged via a native MethodChannel.
         ReliabilityPermission.fullScreenAlarm => null,
+        ReliabilityPermission.deviceAdmin => null,
       };
 
   Future<bool> isGranted(ReliabilityPermission permission) async {
     if (permission == ReliabilityPermission.fullScreenAlarm) {
       return _isFullScreenIntentGranted();
+    }
+    if (permission == ReliabilityPermission.deviceAdmin) {
+      return _isAndroid ? _deviceAdminBridge.isActive() : true;
     }
     final status = await _permissionFor(permission)!.status;
     return status.isGranted;
@@ -47,10 +58,15 @@ class PermissionService {
   /// Requests the permission through the normal OS dialog where supported.
   /// For permissions Android only grants via a settings screen (background
   /// location on Android 11+, Do Not Disturb access, battery optimization,
-  /// full-screen alarms), this opens that screen directly.
+  /// full-screen alarms, device administrator), this opens that screen
+  /// directly.
   Future<void> request(ReliabilityPermission permission) async {
     if (permission == ReliabilityPermission.fullScreenAlarm) {
       await _openFullScreenIntentSettings();
+      return;
+    }
+    if (permission == ReliabilityPermission.deviceAdmin) {
+      if (_isAndroid) await _deviceAdminBridge.requestActivation();
       return;
     }
     if (permission == ReliabilityPermission.backgroundLocation) {

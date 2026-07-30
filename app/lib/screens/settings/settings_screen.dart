@@ -177,16 +177,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBin
           const Divider(),
           const _SectionHeader(
             title: 'Security snapshot',
-            subtitle: 'After this many failed account-code/6-digit-code attempts on this phone, '
-                'it takes a front-camera photo and logs the current location as a security event '
-                '— viewable later under this device\'s history, the same as any other login-security '
-                'log. Set to Off to disable.',
+            subtitle: 'After this many failed attempts — either the in-app account-code/6-digit-code '
+                'login, or (if enabled below) this phone\'s own lock-screen PIN/pattern/password — it '
+                'takes a front-camera photo and logs the current location as a security event, viewable '
+                'later under this device\'s history. Set to Off to disable.',
           ),
           _PermissionTile(
             title: 'Camera',
             description: 'Required for the security snapshot above; has no other use in this app.',
             permission: ReliabilityPermission.camera,
             granted: _permissionStatus[ReliabilityPermission.camera] ?? false,
+            onRefresh: _refreshPermissions,
+          ),
+          _PermissionTile(
+            title: 'Device administrator',
+            description: 'Optional: also triggers the security snapshot after too many failed '
+                'lock-screen unlock attempts, not just failed in-app logins. Android will show its own '
+                'prominent warning listing everything a device administrator app can do (e.g. wipe '
+                'data) — this app only ever uses the failed-unlock notification.',
+            permission: ReliabilityPermission.deviceAdmin,
+            granted: _permissionStatus[ReliabilityPermission.deviceAdmin] ?? false,
             onRefresh: _refreshPermissions,
           ),
           const _SecuritySnapshotThresholdTile(),

@@ -56,6 +56,22 @@
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
             android:foregroundServiceType="location"/>
+
+        <!-- Only receives onPasswordFailed() once the user explicitly grants
+             Device Administrator via Settings > Security snapshot; see
+             SecurityDeviceAdminReceiver and device_admin_receiver.xml for the
+             single policy (watch-login) this actually uses. -->
+        <receiver
+            android:name=".SecurityDeviceAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_receiver"/>
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED"/>
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

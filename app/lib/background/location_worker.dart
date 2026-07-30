@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:device_admin_bridge/device_admin_bridge.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:location_bridge/location_bridge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,8 +8,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants.dart';
 import '../services/api_client.dart';
 import '../services/crypto_service.dart';
+import '../services/lockscreen_trigger_handler.dart';
+import '../services/photo_capturer.dart';
 import '../services/ring_service.dart';
 import '../services/secure_store.dart';
+import '../services/security_capture_service.dart';
 
 const lastCheckInPrefsKey = 'last_check_in_summary';
 
@@ -57,6 +61,10 @@ void _onStart(ServiceInstance service) {
   final cryptoService = CryptoService();
   final ringService = RingService();
   final locationBridge = LocationBridge();
+  final lockscreenTriggerHandler = LockscreenTriggerHandler(
+    deviceAdminBridge: DeviceAdminBridge(),
+    securityCaptureService: SecurityCaptureService(photoCapturer: CameraPhotoCapturer()),
+  );
 
   Future<void> tick() async {
     try {
@@ -106,6 +114,16 @@ void _onStart(ServiceInstance service) {
           'Last check-in failed at ${DateTime.now().toLocal()} — retrying in ${reportingInterval.inMinutes} min.';
       await _updateNotification(service, summary);
       (await SharedPreferences.getInstance()).setString(lastCheckInPrefsKey, summary);
+    }
+
+    // Piggybacks on the same 5-minute cadence as location reporting and
+    // "play sound" polling — kept in its own try/catch so a failure here
+    // (or in the location check-in above) never affects the other.
+    try {
+      await lockscreenTriggerHandler.checkAndHandle();
+    } catch (_) {
+      // SecurityCaptureService already records its own failure status;
+      // nothing more to do here.
     }
   }
 

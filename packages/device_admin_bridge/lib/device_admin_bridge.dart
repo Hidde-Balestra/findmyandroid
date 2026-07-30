@@ -1,0 +1,44 @@
+import 'package:flutter/services.dart';
+
+/// Bridges Android's Device Administrator APIs. This is the only way a
+/// regular app can be notified that the device's lock-screen credential
+/// (PIN/pattern/password) was entered incorrectly — Android otherwise gives
+/// third-party apps no visibility into lock-screen unlock attempts at all,
+/// on purpose. Activating it shows the user Android's own prominent
+/// "Activate device administrator?" warning (listing everything the API
+/// *could* do, e.g. wipe data, set password policies), even though this app
+/// only ever uses the failed-attempt notification.
+///
+/// The failed-attempt counting and threshold check happen entirely on the
+/// native side (in `SecurityDeviceAdminReceiver`/`DeviceAdminPrefs`), since
+/// a failed unlock attempt can occur with no Flutter isolate running to
+/// react to it. [consumePendingLockscreenTrigger] is polled from Dart
+/// instead — see where it's called from for the resulting latency
+/// trade-off.
+class DeviceAdminBridge {
+  static const MethodChannel _channel = MethodChannel(
+    'nl.hiddebalestra.device_admin_bridge/device_admin',
+  );
+
+  Future<bool> isActive() async {
+    return (await _channel.invokeMethod<bool>('isActive')) ?? false;
+  }
+
+  /// Opens Android's own "Activate device administrator?" system screen.
+  /// There is no other way to grant this — it cannot be requested via a
+  /// normal runtime permission dialog.
+  Future<void> requestActivation() => _channel.invokeMethod('requestActivation');
+
+  /// Keeps the native side's copy of the security-snapshot threshold (see
+  /// SecuritySnapshotThresholdNotifier) up to date — the native receiver
+  /// has no access to Dart's SharedPreferences storage, so this must be
+  /// pushed explicitly whenever it changes and once at app startup.
+  Future<void> setThreshold(int threshold) => _channel.invokeMethod('setThreshold', {'threshold': threshold});
+
+  /// Returns true (and atomically clears the flag) if the native receiver
+  /// has recorded enough consecutive failed lock-screen attempts to cross
+  /// the configured threshold since this was last called.
+  Future<bool> consumePendingLockscreenTrigger() async {
+    return (await _channel.invokeMethod<bool>('consumePendingTrigger')) ?? false;
+  }
+}

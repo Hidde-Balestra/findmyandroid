@@ -7,7 +7,7 @@ A self-hosted, privacy-first "find my device" system for Android — without Goo
 - **End-to-end encrypted.** The location-encryption key is derived on-device (and in the web viewer) from your account code — the server only ever stores/serves opaque ciphertext it cannot read.
 - **Reports location every 5 minutes** via a persistent foreground service (not WorkManager — its periodic-task floor is 15 minutes).
 - **"Play sound"** rings the phone at forced maximum volume through Do Not Disturb, reusing the same [`alarm`](https://pub.dev/packages/alarm) engine as [Hidde-Balestra/alarm](https://github.com/Hidde-Balestra/alarm).
-- **Security snapshot** (opt-in, documented — see below): after too many failed account-code/TOTP attempts on a paired phone, log a front-camera photo + location as a security event, visible later in that device's own history.
+- **Security snapshot** (opt-in, documented — see below): after too many failed attempts — the in-app account-code/TOTP login, or (optionally) this phone's own lock-screen credential — log a front-camera photo + location as a security event, visible later in that device's own history.
 
 ## Repository layout
 
@@ -39,12 +39,18 @@ Each location sample is AES-256-GCM encrypted client-side with a fresh random no
 
 ## Security snapshot: a documented feature, not a hidden one
 
-`login_dialog.dart` (the "log in to view devices & history" flow, on an already-paired phone) counts consecutive failed account-code/TOTP attempts (`FailedAttemptTracker`). Once a configurable threshold is crossed (Settings → Security snapshot, default 1 failed attempt, 0 disables it entirely), `SecurityCaptureService` takes one front-camera photo and reads the current location, encrypts both exactly like an ordinary location check-in, and uploads them (`POST /security_events.php`) using the device's own scoped token — no interactive login required, so it works even if the person who failed the login never gets past that screen. The account owner reviews these later from the device's own screen (the shield icon next to "Play sound" in the app's device-history view), the same way a bank app logs failed sign-in attempts.
+Two independent triggers feed the same `SecurityCaptureService`, which takes one front-camera photo, reads the current location, encrypts both exactly like an ordinary location check-in, and uploads them (`POST /security_events.php`) using the device's own scoped token — no interactive login required, so it works even if whoever failed the attempt never gets past that screen. The account owner reviews these later from the device's own screen (the shield icon next to "Play sound" in the app's device-history view), the same way a bank app logs failed sign-in attempts.
+
+1. **In-app login failures** — `login_dialog.dart` (the "log in to view devices & history" flow, on an already-paired phone) counts consecutive failed account-code/TOTP attempts (`FailedAttemptTracker`).
+2. **Lock-screen failures** (optional, Device Administrator) — a regular app has no visibility at all into the phone's own PIN/pattern/password unlock attempts; the only API that exposes this is `DeviceAdminReceiver.onPasswordFailed()`, which requires the user to explicitly activate this app as a device administrator via `Settings → Device administrator`. Activating it shows Android's own prominent system warning listing everything a device administrator *could* do (including things this app never uses, like remote wipe) — that warning is the OS's transparency mechanism, not something this app can soften or skip. Once activated, `SecurityDeviceAdminReceiver` (native, Kotlin) records failed unlocks to its own SharedPreferences file; the existing 5-minute background check-in (`LockscreenTriggerHandler`) polls and consumes that flag, so a lock-screen-triggered snapshot can take up to 5 minutes to fire — the same latency trade-off already made for location reporting and "play sound".
+
+Both triggers share one configurable threshold (Settings → Security snapshot, default 1 failed attempt, 0 disables both entirely).
 
 This is deliberately **not** built to be covert or undetectable:
 - Camera permission must be explicitly granted in Settings — Android's own runtime permission dialog is the transparency mechanism here, and it's listed alongside every other permission this app requests.
+- Device Administrator must be explicitly activated through Android's own system screen, which shows its standard capability warning — this app cannot suppress, reword, or auto-accept it.
 - Android has shown a mandatory camera-in-use indicator (a dot in the status bar) since Android 12, and many devices/regions (Japan, South Korea) always play an audible shutter sound. This code makes no attempt to suppress either — those are OS-level anti-covert-surveillance protections, not implementation gaps.
-- The feature, its threshold, and where to review captured events are documented here and in the app's own Settings screen, not hidden.
+- The feature, its two triggers, its threshold, and where to review captured events are documented here and in the app's own Settings screen, not hidden.
 
 ## Why "play sound" polls instead of pushing
 
