@@ -18,7 +18,9 @@ async function request(method, path, { body, token } = {}) {
   });
   const json = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(json.message || `Request to ${path} failed (${response.status})`);
+    const error = new Error(json.message || `Request to ${path} failed (${response.status})`);
+    error.status = response.status;
+    throw error;
   }
   return json;
 }

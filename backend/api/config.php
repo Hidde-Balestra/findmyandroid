@@ -37,7 +37,7 @@ define('TOTP_ENCRYPTION_KEY_BASE64', getenv('FMA_TOTP_ENCRYPTION_KEY_BASE64') ?:
 
 define('TOTP_ISSUER', 'FindMyAndroid');
 
-const ACCOUNT_SESSION_LIFETIME_SECONDS = 3600; // 1 hour
+const ACCOUNT_SESSION_LIFETIME_SECONDS = 7200; // 2 hours — matches the web viewer's persisted session
 const RING_COMMAND_MAX_AGE_DAYS = 1;
 const LOCATION_RETENTION_DAYS = 30;
 

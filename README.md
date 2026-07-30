@@ -27,7 +27,7 @@ There is no username/password/email. Registering (`POST /register.php`) generate
 
 Two separate credential tiers exist after that:
 
-- **Account session** (code + TOTP, ~1 hour) — used interactively (the app's device list, the web viewer) to view history and queue a "play sound" command.
+- **Account session** (code + TOTP, ~2 hours) — used interactively (the app's device list, the web viewer) to view history and queue a "play sound" command. The web viewer persists this in `localStorage` so a page refresh doesn't force logging in again — meaning the account code sits in the browser for that window too; the server-side session expires on the same schedule either way.
 - **Device token** (issued once when a phone is paired) — used only by that phone's unattended 5-minute check-in to submit its own location and poll for a pending ring command. It cannot read history or see other devices, so the background service never needs to prompt for a TOTP code.
 
 ## Encryption
