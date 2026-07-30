@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/api_client.dart';
 import '../services/crypto_service.dart';
+import '../services/failed_attempt_tracker.dart';
 import '../services/permission_service.dart';
+import '../services/photo_capturer.dart';
 import '../services/ring_service.dart';
 import '../services/secure_store.dart';
+import '../services/security_capture_service.dart';
 import '../services/update_service.dart';
 import '../constants.dart';
 
@@ -14,6 +17,14 @@ final cryptoServiceProvider = Provider((ref) => CryptoService());
 final permissionServiceProvider = Provider((ref) => PermissionService());
 final updateServiceProvider = Provider((ref) => UpdateService());
 final ringServiceProvider = Provider((ref) => RingService());
+final failedAttemptTrackerProvider = Provider((ref) => FailedAttemptTracker());
+
+/// Captures+uploads a security snapshot after too many failed login
+/// attempts (see FailedAttemptTracker/SecuritySnapshotThresholdNotifier).
+/// Overridable in tests with a fake PhotoCapturer/ApiClient.
+final securityCaptureServiceProvider = Provider(
+  (ref) => SecurityCaptureService(photoCapturer: CameraPhotoCapturer()),
+);
 
 /// Server base URL, defaulting to [defaultServerBaseUrl] until the user
 /// overrides it (e.g. for self-hosting) in Settings.

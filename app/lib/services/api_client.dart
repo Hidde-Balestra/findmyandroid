@@ -155,6 +155,40 @@ class ApiClient {
     return json['ring'] == true;
   }
 
+  /// Submits a security snapshot (see SecurityCaptureService) using the
+  /// device's own scoped token — at least one of the two ciphertexts must
+  /// be provided.
+  Future<void> submitSecurityEvent({
+    required String deviceToken,
+    required DateTime capturedAt,
+    String? photoCiphertext,
+    String? locationCiphertext,
+  }) async {
+    final response = await _http.post(
+      _uri('security_events.php'),
+      headers: {..._bearer(deviceToken), 'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'photoCiphertext': ?photoCiphertext,
+        'locationCiphertext': ?locationCiphertext,
+        'capturedAt': capturedAt.toUtc().toIso8601String(),
+      }),
+    );
+    _decode(response);
+  }
+
+  Future<List<SecurityEvent>> listSecurityEvents({
+    required String sessionToken,
+    required String deviceId,
+    int limit = 20,
+  }) async {
+    final response = await _http.get(
+      _uri('security_events.php?deviceId=$deviceId&limit=$limit'),
+      headers: _bearer(sessionToken),
+    );
+    final json = _decode(response);
+    return (json['events'] as List).map((e) => SecurityEvent.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   Map<String, dynamic> _decode(http.Response response) {
     Map<String, dynamic> json;
     try {

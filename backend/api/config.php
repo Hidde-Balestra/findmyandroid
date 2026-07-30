@@ -40,6 +40,7 @@ define('TOTP_ISSUER', 'FindMyAndroid');
 const ACCOUNT_SESSION_LIFETIME_SECONDS = 7200; // 2 hours — matches the web viewer's persisted session
 const RING_COMMAND_MAX_AGE_DAYS = 1;
 const LOCATION_RETENTION_DAYS = 30;
+const SECURITY_EVENT_RETENTION_DAYS = 90; // kept longer than routine locations: this is evidence
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 $isAllowedOrigin = $origin !== '' && (

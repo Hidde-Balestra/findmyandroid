@@ -30,6 +30,7 @@ dependencies:
   latlong2: ^0.9.1
   shared_preferences: ^2.3.4
   qr_flutter: ^4.1.0
+  camera: ^0.11.0+2
 
   # Local plugin: reads location via Android's built-in LocationManager,
   # deliberately bypassing Google Play Services / the fused location API.

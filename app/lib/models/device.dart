@@ -25,3 +25,25 @@ class LocationPoint {
         capturedAt: DateTime.parse(json['capturedAt'] as String),
       );
 }
+
+/// A security snapshot logged after too many failed account-code/TOTP
+/// attempts on a device — see SecurityCaptureService. Either field may be
+/// null server-side (a capture with no camera permission still logs the
+/// location, and vice versa), but at least one is always present.
+class SecurityEvent {
+  final String? photoCiphertext;
+  final String? locationCiphertext;
+  final DateTime capturedAt;
+
+  const SecurityEvent({
+    required this.capturedAt,
+    this.photoCiphertext,
+    this.locationCiphertext,
+  });
+
+  factory SecurityEvent.fromJson(Map<String, dynamic> json) => SecurityEvent(
+        photoCiphertext: json['photoCiphertext'] as String?,
+        locationCiphertext: json['locationCiphertext'] as String?,
+        capturedAt: DateTime.parse(json['capturedAt'] as String),
+      );
+}

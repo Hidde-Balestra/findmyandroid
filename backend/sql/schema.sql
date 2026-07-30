@@ -60,3 +60,19 @@ CREATE TABLE IF NOT EXISTS ring_commands (
     KEY idx_ring_device_status (device_id, status),
     CONSTRAINT fk_ring_device FOREIGN KEY (device_id) REFERENCES devices (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Security snapshots (front-camera photo + location) logged after too many
+-- failed account-code/TOTP attempts on a device. A documented, opt-in
+-- feature (threshold configurable in-app, default 1, 0 = off) — not a
+-- covert capability. Same opaque-ciphertext model as locations: this
+-- server never has the key to view a photo or decrypt a location.
+CREATE TABLE IF NOT EXISTS security_events (
+    id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    device_id            CHAR(36)        NOT NULL,
+    photo_ciphertext     LONGTEXT        NULL, -- base64(nonce || AES-256-GCM ciphertext || tag) of base64(JPEG)
+    location_ciphertext  TEXT            NULL, -- same encoding as locations.ciphertext
+    captured_at          DATETIME        NOT NULL,
+    created_at           DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_security_events_device_time (device_id, captured_at),
+    CONSTRAINT fk_security_events_device FOREIGN KEY (device_id) REFERENCES devices (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

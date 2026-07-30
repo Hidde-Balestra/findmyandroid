@@ -16,6 +16,7 @@ enum ReliabilityPermission {
   doNotDisturb,
   batteryOptimization,
   fullScreenAlarm,
+  camera,
 }
 
 class PermissionService {
@@ -30,6 +31,7 @@ class PermissionService {
         ReliabilityPermission.exactAlarm => Permission.scheduleExactAlarm,
         ReliabilityPermission.doNotDisturb => Permission.accessNotificationPolicy,
         ReliabilityPermission.batteryOptimization => Permission.ignoreBatteryOptimizations,
+        ReliabilityPermission.camera => Permission.camera,
         // Not covered by permission_handler; bridged via a native MethodChannel.
         ReliabilityPermission.fullScreenAlarm => null,
       };

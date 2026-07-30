@@ -173,6 +173,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBin
             onRefresh: _refreshPermissions,
           ),
           const Divider(),
+          const _SectionHeader(
+            title: 'Security snapshot',
+            subtitle: 'After this many failed account-code/6-digit-code attempts on this phone, '
+                'it takes a front-camera photo and logs the current location as a security event '
+                '— viewable later under this device\'s history, the same as any other login-security '
+                'log. Set to Off to disable.',
+          ),
+          _PermissionTile(
+            title: 'Camera',
+            description: 'Required for the security snapshot above; has no other use in this app.',
+            permission: ReliabilityPermission.camera,
+            granted: _permissionStatus[ReliabilityPermission.camera] ?? false,
+            onRefresh: _refreshPermissions,
+          ),
+          const _SecuritySnapshotThresholdTile(),
+          const Divider(),
           const _SectionHeader(title: 'Updates'),
           const _UpdatesSection(),
           const SizedBox(height: 24),
@@ -273,6 +289,31 @@ class _SectionHeader extends StatelessWidget {
           ),
           if (subtitle != null) Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
         ],
+      ),
+    );
+  }
+}
+
+class _SecuritySnapshotThresholdTile extends ConsumerWidget {
+  const _SecuritySnapshotThresholdTile();
+
+  static const _options = [0, 1, 3, 5];
+
+  String _label(int value) => value == 0 ? 'Off' : '$value failed attempt${value == 1 ? '' : 's'}';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final threshold = ref.watch(securitySnapshotThresholdProvider);
+    return ListTile(
+      title: const Text('Trigger after'),
+      trailing: DropdownButton<int>(
+        value: _options.contains(threshold) ? threshold : 1,
+        items: [
+          for (final value in _options) DropdownMenuItem(value: value, child: Text(_label(value))),
+        ],
+        onChanged: (value) {
+          if (value != null) ref.read(securitySnapshotThresholdProvider.notifier).setThreshold(value);
+        },
       ),
     );
   }

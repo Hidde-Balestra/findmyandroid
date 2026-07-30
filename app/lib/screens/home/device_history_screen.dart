@@ -7,6 +7,7 @@ import '../../models/device.dart';
 import '../../services/crypto_service.dart';
 import '../../state/account_session.dart';
 import '../../state/providers.dart';
+import 'security_events_screen.dart';
 
 /// Shows a device's decrypted location history on an OpenStreetMap tile map
 /// (never Google Maps — that pulls in Play Services). Decryption happens
@@ -83,6 +84,13 @@ class _DeviceHistoryScreenState extends ConsumerState<DeviceHistoryScreen> {
       appBar: AppBar(
         title: Text(widget.device.label),
         actions: [
+          IconButton(
+            tooltip: 'Security log',
+            icon: const Icon(Icons.shield_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => SecurityEventsScreen(device: widget.device)),
+            ),
+          ),
           IconButton(onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
         ],
       ),

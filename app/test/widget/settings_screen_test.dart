@@ -56,6 +56,7 @@ void main() {
         ReliabilityPermission.doNotDisturb: false,
         ReliabilityPermission.batteryOptimization: true,
         ReliabilityPermission.fullScreenAlarm: false,
+        ReliabilityPermission.camera: false,
       },
     );
 
@@ -70,10 +71,11 @@ void main() {
     expect(find.text('Background location'), findsOneWidget);
     expect(find.text('Do Not Disturb access'), findsOneWidget);
     expect(find.text('Full-screen alerts'), findsOneWidget);
+    expect(find.text('Camera'), findsOneWidget);
 
-    // 3 granted -> check_circle icons; 4 not granted -> "Open settings" buttons.
+    // 3 granted -> check_circle icons; 5 not granted -> "Open settings" buttons.
     expect(find.byIcon(Icons.check_circle), findsNWidgets(3));
-    expect(find.widgetWithText(TextButton, 'Open settings'), findsNWidgets(4));
+    expect(find.widgetWithText(TextButton, 'Open settings'), findsNWidgets(5));
   });
 
   testWidgets('tapping "Open settings" requests the permission and refreshes', (tester) async {

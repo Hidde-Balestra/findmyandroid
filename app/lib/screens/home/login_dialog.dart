@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/account_session.dart';
+import '../../state/app_settings.dart';
 import '../../state/providers.dart';
 
 /// Prompts for the account code + current TOTP code and, on success, stores
@@ -32,9 +35,11 @@ Future<bool> showAccountLoginDialog(BuildContext context, WidgetRef ref) async {
               saltBase64: login.saltBase64,
               code: code,
             );
+            await ref.read(failedAttemptTrackerProvider).reset();
             if (context.mounted) Navigator.of(context).pop(true);
           } catch (e) {
             setState(() => error = 'Login failed: $e');
+            await _maybeTriggerSecuritySnapshot(ref);
           }
         }
 
@@ -71,4 +76,20 @@ Future<bool> showAccountLoginDialog(BuildContext context, WidgetRef ref) async {
   );
 
   return result ?? false;
+}
+
+/// Records this failed attempt and, once the configured threshold is
+/// crossed (0 disables the feature), fires off a security snapshot in the
+/// background — deliberately not awaited by the caller, so a slow/failed
+/// camera capture never delays the login dialog's own error handling.
+Future<void> _maybeTriggerSecuritySnapshot(WidgetRef ref) async {
+  final threshold = ref.read(securitySnapshotThresholdProvider);
+  if (threshold <= 0) return;
+
+  final tracker = ref.read(failedAttemptTrackerProvider);
+  final count = await tracker.recordFailure();
+  if (count >= threshold) {
+    await tracker.reset();
+    unawaited(ref.read(securityCaptureServiceProvider).captureAndUpload());
+  }
 }

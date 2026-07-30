@@ -7,6 +7,7 @@ A self-hosted, privacy-first "find my device" system for Android — without Goo
 - **End-to-end encrypted.** The location-encryption key is derived on-device (and in the web viewer) from your account code — the server only ever stores/serves opaque ciphertext it cannot read.
 - **Reports location every 5 minutes** via a persistent foreground service (not WorkManager — its periodic-task floor is 15 minutes).
 - **"Play sound"** rings the phone at forced maximum volume through Do Not Disturb, reusing the same [`alarm`](https://pub.dev/packages/alarm) engine as [Hidde-Balestra/alarm](https://github.com/Hidde-Balestra/alarm).
+- **Security snapshot** (opt-in, documented — see below): after too many failed account-code/TOTP attempts on a paired phone, log a front-camera photo + location as a security event, visible later in that device's own history.
 
 ## Repository layout
 
@@ -35,6 +36,15 @@ Two separate credential tiers exist after that:
 The location-encryption key is `PBKDF2-HMAC-SHA256(code, salt, 210,000 iterations)`, computed identically by the Flutter app ([`cryptography` package](https://pub.dev/packages/cryptography)) and the web viewer (browser `SubtleCrypto` — no WASM/CDN crypto library needed). PBKDF2 rather than a memory-hard KDF like Argon2id is a deliberate choice: the account code has ~160 bits of server-generated entropy, so there's no dictionary attack to defend against, and PBKDF2's native browser support keeps the web viewer dependency-free.
 
 Each location sample is AES-256-GCM encrypted client-side with a fresh random nonce before it's ever sent over the network. The server (`backend/api/locations.php`) only stores/serves the resulting ciphertext blob.
+
+## Security snapshot: a documented feature, not a hidden one
+
+`login_dialog.dart` (the "log in to view devices & history" flow, on an already-paired phone) counts consecutive failed account-code/TOTP attempts (`FailedAttemptTracker`). Once a configurable threshold is crossed (Settings → Security snapshot, default 1 failed attempt, 0 disables it entirely), `SecurityCaptureService` takes one front-camera photo and reads the current location, encrypts both exactly like an ordinary location check-in, and uploads them (`POST /security_events.php`) using the device's own scoped token — no interactive login required, so it works even if the person who failed the login never gets past that screen. The account owner reviews these later from the device's own screen (the shield icon next to "Play sound" in the app's device-history view), the same way a bank app logs failed sign-in attempts.
+
+This is deliberately **not** built to be covert or undetectable:
+- Camera permission must be explicitly granted in Settings — Android's own runtime permission dialog is the transparency mechanism here, and it's listed alongside every other permission this app requests.
+- Android has shown a mandatory camera-in-use indicator (a dot in the status bar) since Android 12, and many devices/regions (Japan, South Korea) always play an audible shutter sound. This code makes no attempt to suppress either — those are OS-level anti-covert-surveillance protections, not implementation gaps.
+- The feature, its threshold, and where to review captured events are documented here and in the app's own Settings screen, not hidden.
 
 ## Why "play sound" polls instead of pushing
 
