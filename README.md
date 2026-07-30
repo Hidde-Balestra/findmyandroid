@@ -43,7 +43,10 @@ Without Google Play Services there's no Firebase Cloud Messaging. Rather than ru
 ## Running the backend
 
 1. Create a MySQL/MariaDB database and import `backend/sql/schema.sql`.
-2. Copy your DB credentials into `backend/api/config.php`, and set real values for `CODE_LOOKUP_PEPPER` and `TOTP_ENCRYPTION_KEY_BASE64` (generate the latter with `php -r "echo base64_encode(random_bytes(32));"`).
+2. `backend/api/config.php` reads every secret from an environment variable — **never edit real values into that file**, since it lives in this public repo. Set these on the server itself (Apache/Nginx vhost, php-fpm pool `env[...]`, etc.), not by editing PHP:
+   - `FMA_DB_HOST`, `FMA_DB_USER`, `FMA_DB_PASSWORD`, `FMA_DB_NAME`
+   - `FMA_CODE_LOOKUP_PEPPER` — generate with `php -r "echo bin2hex(random_bytes(32));"`
+   - `FMA_TOTP_ENCRYPTION_KEY_BASE64` — generate with `php -r "echo base64_encode(random_bytes(32));"`
 3. Deploy `backend/api/` behind PHP 8.2+ with the `sodium` and `pdo_mysql` extensions enabled, and `backend/web/` as a static site pointed at that API.
 4. In the Flutter app and `backend/web/api.js`, update the default API base URL to your deployment.
 

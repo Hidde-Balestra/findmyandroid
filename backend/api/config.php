@@ -10,20 +10,28 @@
 
 declare(strict_types=1);
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'findmyandroid');
-define('DB_PASSWORD', 'CHANGE_ME');
-define('DB_NAME', 'findmyandroid');
+/**
+ * Every real secret below is read from an environment variable, never
+ * hardcoded here — this file lives in a public repo. Set these on the
+ * actual server (Apache/Nginx vhost env, php-fpm pool `env[...]`, or a
+ * shell profile sourced before starting PHP), not by editing this file.
+ * The fallback strings only exist so a misconfigured deployment fails
+ * loudly/obviously instead of silently running with a guessable secret.
+ */
+define('DB_HOST', getenv('FMA_DB_HOST') ?: 'localhost');
+define('DB_USER', getenv('FMA_DB_USER') ?: 'findmyandroid');
+define('DB_PASSWORD', getenv('FMA_DB_PASSWORD') ?: 'CHANGE_ME');
+define('DB_NAME', getenv('FMA_DB_NAME') ?: 'findmyandroid');
 define('DB_CHARSET', 'utf8mb4');
 
 // HMAC pepper used only to build the indexed, non-reversible lookup value
 // for the account code (accounts.code_lookup) — never used on its own to
-// authenticate. Change this in production and never commit the real value.
-define('CODE_LOOKUP_PEPPER', 'CHANGE_ME_TO_A_LONG_RANDOM_VALUE');
+// authenticate. Generate with: bin2hex(random_bytes(32))
+define('CODE_LOOKUP_PEPPER', getenv('FMA_CODE_LOOKUP_PEPPER') ?: 'CHANGE_ME_TO_A_LONG_RANDOM_VALUE');
 
 // libsodium secretbox key (32 raw bytes, base64) used only to encrypt TOTP
-// secrets at rest. Generate with: sodium_bin2base64(sodium_crypto_secretbox_keygen(), SODIUM_BASE64_VARIANT_ORIGINAL)
-define('TOTP_ENCRYPTION_KEY_BASE64', 'CHANGE_ME_GENERATE_A_REAL_KEY');
+// secrets at rest. Generate with: base64_encode(random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES))
+define('TOTP_ENCRYPTION_KEY_BASE64', getenv('FMA_TOTP_ENCRYPTION_KEY_BASE64') ?: 'CHANGE_ME_GENERATE_A_REAL_KEY');
 
 define('TOTP_ISSUER', 'FindMyAndroid');
 
