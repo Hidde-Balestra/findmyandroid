@@ -37,6 +37,11 @@ dependencies:
   location_bridge:
     path: ../packages/location_bridge
 
+  # Local plugin: Device Administrator bridge, so the security-snapshot
+  # feature can also trigger on failed lock-screen unlock attempts.
+  device_admin_bridge:
+    path: ../packages/device_admin_bridge
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
