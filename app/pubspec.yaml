@@ -2,7 +2,7 @@ name: findmyandroid
 description: "Find My Android - a privacy-first, Google-Play-Services-free device locator."
 publish_to: 'none'
 
-version: 0.1.4+5
+version: 0.2.0+6
 
 environment:
   sdk: ^3.11.4
