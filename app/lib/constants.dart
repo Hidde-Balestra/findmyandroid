@@ -6,7 +6,7 @@ const reportingInterval = Duration(minutes: 5);
 
 /// Default backend URL. Overridable in Settings (e.g. for self-hosting on a
 /// different domain) — stored via SecureStore.setServerBaseUrl.
-const defaultServerBaseUrl = 'https://api.hiddebalestra.nl/findmyandroid';
+const defaultServerBaseUrl = 'https://find.awake-music.co/api';
 
 const notificationChannelId = 'findmyandroid_reporting';
 const notificationChannelName = 'Location reporting';

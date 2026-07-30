@@ -46,6 +46,7 @@ $isAllowedOrigin = $origin !== '' && (
     preg_match('/^https?:\/\/localhost(:\d+)?$/', $origin) ||
     preg_match('/^https?:\/\/127\.0\.0\.1(:\d+)?$/', $origin) ||
     str_ends_with($origin, '.hiddebalestra.nl') ||
+    str_ends_with($origin, '.awake-music.co') ||
     str_ends_with($origin, '.github.io')
 );
 

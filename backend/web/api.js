@@ -2,7 +2,7 @@
 // account code once, over HTTPS, to log in — everything after that uses the
 // short-lived session token returned by login().
 
-const DEFAULT_API_BASE = 'https://api.hiddebalestra.nl/findmyandroid';
+const DEFAULT_API_BASE = 'https://find.awake-music.co/api';
 
 function apiBase() {
   return localStorage.getItem('fma_api_base') || DEFAULT_API_BASE;
