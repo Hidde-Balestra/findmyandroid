@@ -62,6 +62,21 @@ class PermissionService {
 
   Future<void> openSettings() => openAppSettings();
 
+  /// Requests everything the 5-minute reporting service needs before it's
+  /// safe to start. Android 14+ refuses to let a foreground service declare
+  /// `FOREGROUND_SERVICE_TYPE_LOCATION` unless the app already holds location
+  /// permission at that moment — starting it anyway doesn't just fail
+  /// quietly, it crashes the whole app with
+  /// ForegroundServiceDidNotStartInTimeException once the OS's startup grace
+  /// period elapses. Returns whether location permission ended up granted
+  /// (the minimum required to start the service at all).
+  Future<bool> requestReportingPermissions() async {
+    await request(ReliabilityPermission.notification);
+    await request(ReliabilityPermission.location);
+    await request(ReliabilityPermission.backgroundLocation);
+    return isGranted(ReliabilityPermission.location);
+  }
+
   Future<Map<ReliabilityPermission, bool>> statusSnapshot() async {
     final result = <ReliabilityPermission, bool>{};
     for (final permission in ReliabilityPermission.values) {

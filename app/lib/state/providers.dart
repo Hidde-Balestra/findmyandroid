@@ -39,3 +39,29 @@ final isPairedProvider = FutureProvider((ref) async {
 });
 
 final backgroundServiceProvider = Provider((ref) => FlutterBackgroundService());
+
+/// Whether the 5-minute reporting service is currently running. Re-evaluated
+/// whenever [pairingRefreshProvider] is bumped, so the UI notices right after
+/// [startReportingIfPossible] (or "forget this device") changes it.
+final isReportingProvider = FutureProvider((ref) async {
+  ref.watch(pairingRefreshProvider);
+  final service = ref.watch(backgroundServiceProvider);
+  return service.isRunning();
+});
+
+/// Starts the background reporting service, but only after confirming
+/// location permission is actually granted — starting it without that
+/// permission doesn't fail quietly, it crashes the app once Android's
+/// foreground-service startup grace period elapses (see
+/// PermissionService.requestReportingPermissions). Returns whether the
+/// service is running afterwards.
+Future<bool> startReportingIfPossible(WidgetRef ref) async {
+  final permissionService = ref.read(permissionServiceProvider);
+  final granted = await permissionService.requestReportingPermissions();
+  final service = ref.read(backgroundServiceProvider);
+  if (granted && !await service.isRunning()) {
+    await service.startService();
+  }
+  ref.read(pairingRefreshProvider.notifier).state++;
+  return service.isRunning();
+}

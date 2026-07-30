@@ -33,6 +33,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     setState(() => _lastCheckIn = prefs.getString(lastCheckInPrefsKey));
   }
 
+  Future<void> _startReporting() async {
+    final started = await startReportingIfPossible(ref);
+    if (!mounted) return;
+    if (!started) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location permission is required to start reporting.')),
+      );
+    }
+  }
+
   Future<void> _testRingNow() async {
     final ringService = ref.read(ringServiceProvider);
     await ringService.init();
@@ -66,6 +76,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isPaired = ref.watch(isPairedProvider).valueOrNull ?? false;
+    final isReporting = ref.watch(isReportingProvider).valueOrNull ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -91,17 +102,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Row(
                     children: [
                       Icon(
-                        isPaired ? Icons.check_circle : Icons.error,
-                        color: isPaired ? Colors.green : Theme.of(context).colorScheme.error,
+                        isReporting ? Icons.check_circle : Icons.error,
+                        color: isReporting ? Colors.green : Theme.of(context).colorScheme.error,
                       ),
                       const SizedBox(width: 8),
-                      Text(isPaired ? 'This phone is reporting its location' : 'Not paired'),
+                      Text(
+                        !isPaired
+                            ? 'Not paired'
+                            : isReporting
+                                ? 'This phone is reporting its location'
+                                : 'Paired, but not reporting yet',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(_lastCheckIn ?? 'No check-in yet.'),
                   const SizedBox(height: 4),
-                  TextButton(onPressed: _loadLastCheckIn, child: const Text('Refresh status')),
+                  if (isPaired && !isReporting)
+                    FilledButton(
+                      onPressed: _startReporting,
+                      child: const Text('Start reporting'),
+                    )
+                  else
+                    TextButton(onPressed: _loadLastCheckIn, child: const Text('Refresh status')),
                 ],
               ),
             ),

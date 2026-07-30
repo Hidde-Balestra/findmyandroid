@@ -88,10 +88,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         lekBytes: keyBytes,
       );
 
-      final service = ref.read(backgroundServiceProvider);
-      await service.startService();
-
-      ref.read(pairingRefreshProvider.notifier).state++;
+      // Requests location permission first — starting the service without it
+      // crashes the app (Android refuses a location-type foreground service
+      // without that permission already granted). Bumps pairingRefreshProvider
+      // itself, so isPairedProvider/isReportingProvider are current by the
+      // time Home reads them. If permission is denied here, Home still shows
+      // up (pairing itself succeeded) with a prompt to grant it later.
+      await startReportingIfPossible(ref);
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(

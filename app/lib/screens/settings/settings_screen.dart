@@ -41,6 +41,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBin
   Future<void> _refreshPermissions() async {
     final status = await ref.read(permissionServiceProvider).statusSnapshot();
     if (mounted) setState(() => _permissionStatus = status);
+
+    // Best-effort: if location permission just got granted here (rather than
+    // during onboarding) and this phone is paired but not yet reporting,
+    // start the service now instead of making the user find the "Start
+    // reporting" button on Home themselves. Never lets a failure here (e.g.
+    // secure storage unavailable) break the rest of the settings screen.
+    try {
+      final isPaired = await ref.read(secureStoreProvider).isPaired;
+      if (isPaired && (status[ReliabilityPermission.location] ?? false)) {
+        final service = ref.read(backgroundServiceProvider);
+        if (!await service.isRunning()) await service.startService();
+      }
+    } catch (_) {
+      // Ignored: Home's "Start reporting" button remains as a fallback.
+    }
   }
 
   Future<void> _forgetDevice() async {

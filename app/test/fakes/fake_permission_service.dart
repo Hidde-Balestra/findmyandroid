@@ -25,4 +25,12 @@ class FakePermissionService implements PermissionService {
 
   @override
   Future<Map<ReliabilityPermission, bool>> statusSnapshot() async => Map.of(granted);
+
+  @override
+  Future<bool> requestReportingPermissions() async {
+    await request(ReliabilityPermission.notification);
+    await request(ReliabilityPermission.location);
+    await request(ReliabilityPermission.backgroundLocation);
+    return isGranted(ReliabilityPermission.location);
+  }
 }
