@@ -6,3 +6,4 @@ Thumbs.db
 
 # Backend: never commit real secrets/credentials.
 backend/api/config.local.php
+backend/api/.env

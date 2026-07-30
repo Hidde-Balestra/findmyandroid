@@ -10,12 +10,14 @@
 
 declare(strict_types=1);
 
+require __DIR__ . '/env.php';
+
 /**
  * Every real secret below is read from an environment variable, never
- * hardcoded here — this file lives in a public repo. Set these on the
- * actual server (Apache/Nginx vhost env, php-fpm pool `env[...]`, or a
- * shell profile sourced before starting PHP), not by editing this file.
- * The fallback strings only exist so a misconfigured deployment fails
+ * hardcoded here — this file lives in a public repo. Set these either as
+ * real server environment variables, or (simplest on shared hosting)
+ * in `.env` next to this file — see .env.example and env.php. The
+ * fallback strings only exist so a misconfigured deployment fails
  * loudly/obviously instead of silently running with a guessable secret.
  */
 define('DB_HOST', getenv('FMA_DB_HOST') ?: 'localhost');
