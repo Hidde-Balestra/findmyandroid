@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants.dart';
 import '../../services/permission_service.dart';
+import '../../services/security_capture_service.dart';
 import '../../services/update_service.dart';
 import '../../state/app_settings.dart';
 import '../../state/providers.dart';
@@ -188,6 +190,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBin
             onRefresh: _refreshPermissions,
           ),
           const _SecuritySnapshotThresholdTile(),
+          const _SecuritySnapshotStatusTile(),
           const Divider(),
           const _SectionHeader(title: 'Updates'),
           const _UpdatesSection(),
@@ -315,6 +318,42 @@ class _SecuritySnapshotThresholdTile extends ConsumerWidget {
           if (value != null) ref.read(securitySnapshotThresholdProvider.notifier).setThreshold(value);
         },
       ),
+    );
+  }
+}
+
+/// Shows the outcome of the last capture attempt — captureAndUpload() never
+/// throws or otherwise reports failures to its caller by design, so without
+/// this the feature would look like a silent black box with no way to tell
+/// whether it actually did anything.
+class _SecuritySnapshotStatusTile extends StatefulWidget {
+  const _SecuritySnapshotStatusTile();
+
+  @override
+  State<_SecuritySnapshotStatusTile> createState() => _SecuritySnapshotStatusTileState();
+}
+
+class _SecuritySnapshotStatusTileState extends State<_SecuritySnapshotStatusTile> {
+  String? _status;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) setState(() => _status = prefs.getString(lastSecuritySnapshotStatusPrefsKey));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: const Text('Last snapshot attempt'),
+      subtitle: Text(_status ?? 'None yet — nothing has triggered the threshold on this phone.'),
+      isThreeLine: true,
+      trailing: IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
     );
   }
 }
