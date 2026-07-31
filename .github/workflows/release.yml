@@ -51,19 +51,24 @@ jobs:
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           EOF
 
-      - name: Build release APKs
+      - name: Build release APK
         working-directory: app
-        run: flutter build apk --release --split-per-abi
+        # A single universal APK (all ABIs bundled in one file) instead of
+        # --split-per-abi's 3 separate files -- one download, no need to
+        # figure out which ABI matches the phone. Larger file size is the
+        # trade-off, which doesn't matter for direct-download installs like
+        # this (it would for a Play Store upload, which this isn't).
+        run: flutter build apk --release
 
-      - name: Upload APK build artifacts
+      - name: Upload APK build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apks
-          path: app/build/app/outputs/flutter-apk/*.apk
+          name: release-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
 
       - name: Create GitHub release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/app/outputs/flutter-apk/*.apk
+          files: app/build/app/outputs/flutter-apk/app-release.apk
           generate_release_notes: true

@@ -80,5 +80,5 @@ flutter build apk --release
 ## Releases & CI
 
 - `.github/workflows/test.yml` runs `flutter analyze`/`flutter test` and lints the PHP backend on every push/PR.
-- `.github/workflows/release.yml` builds signed, split-per-ABI release APKs and publishes them to GitHub Releases whenever a `vX.Y.Z` tag is pushed (or via manual dispatch). It needs these repo secrets to produce a *signed* build (falls back to debug signing otherwise): `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+- `.github/workflows/release.yml` builds one signed, universal release APK (all ABIs bundled in a single file, so there's only ever one download to pick — larger than a split-per-ABI build, which doesn't matter for a direct download outside the Play Store) and publishes it to GitHub Releases whenever a `vX.Y.Z` tag is pushed (or via manual dispatch). It needs these repo secrets to produce a *signed* build (falls back to debug signing otherwise): `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
 - The in-app Settings screen checks this repo's [latest release](https://github.com/Hidde-Balestra/findmyandroid/releases/latest) and links straight to it when an update is available.

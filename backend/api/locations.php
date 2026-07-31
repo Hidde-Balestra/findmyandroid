@@ -25,7 +25,12 @@ switch ($_SERVER['REQUEST_METHOD']) {
         }
 
         try {
-            $capturedAtUtc = (new DateTime($capturedAt))->format('Y-m-d H:i:s');
+            // The client always sends this already converted to UTC (see
+            // ApiClient.submitLocation) -- setTimezone(UTC) here makes that
+            // explicit rather than relying on the input string's own offset,
+            // so what lands in this naive DATETIME column is unambiguous
+            // regardless of how it was phrased.
+            $capturedAtUtc = (new DateTime($capturedAt))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
         } catch (Exception) {
             sendResponse(['message' => 'capturedAt must be a valid ISO 8601 timestamp'], 400);
         }
@@ -71,7 +76,13 @@ switch ($_SERVER['REQUEST_METHOD']) {
         $locations = array_map(static function (array $row): array {
             return [
                 'ciphertext' => $row['ciphertext'],
-                'capturedAt' => (new DateTime($row['captured_at']))->format(DateTime::ATOM),
+                // captured_at is a naive DATETIME storing UTC wall-clock (see
+                // the POST handler above) -- constructing without an explicit
+                // UTC DateTimeZone here would instead interpret it using
+                // whatever timezone this PHP server's date.timezone happens
+                // to be set to, silently shifting every timestamp shown to
+                // the app/web viewer by that server's UTC offset.
+                'capturedAt' => (new DateTime($row['captured_at'], new DateTimeZone('UTC')))->format(DateTime::ATOM),
             ];
         }, $rows);
 
