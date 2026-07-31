@@ -41,4 +41,17 @@ class DeviceAdminBridge {
   Future<bool> consumePendingLockscreenTrigger() async {
     return (await _channel.invokeMethod<bool>('consumePendingTrigger')) ?? false;
   }
+
+  /// Debug aid (Settings → Debug): when enabled, the native receiver posts
+  /// an immediate system notification on every failed lock-screen attempt,
+  /// independent of the security-snapshot threshold and the up-to-5-minute
+  /// background poll — lets the user confirm onPasswordFailed() is actually
+  /// firing on their device without waiting on the rest of that pipeline.
+  Future<void> setDebugNotifyEnabled(bool enabled) =>
+      _channel.invokeMethod('setDebugNotifyEnabled', {'enabled': enabled});
+
+  /// Posts the same debug notification as above on demand, without needing
+  /// to actually fail a lock-screen unlock — useful for checking that
+  /// notification permission/channel setup works at all on this device.
+  Future<void> sendTestNotification() => _channel.invokeMethod('sendTestNotification');
 }

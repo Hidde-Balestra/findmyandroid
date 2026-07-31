@@ -21,10 +21,12 @@ class FindMyAndroidApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
-    // Pushes the security-snapshot threshold to the native Device Admin
-    // receiver on every app start, not just when Settings is opened — it has
-    // no other way to learn the current value (see SecuritySnapshotThresholdNotifier).
+    // Pushes the security-snapshot threshold and the debug-notify flag to the
+    // native Device Admin receiver on every app start, not just when Settings
+    // is opened — it has no other way to learn the current values (see
+    // SecuritySnapshotThresholdNotifier/DebugLockscreenNotifyNotifier).
     ref.watch(securitySnapshotThresholdProvider);
+    ref.watch(debugLockscreenNotifyProvider);
 
     return MaterialApp(
       title: 'Find My Android',

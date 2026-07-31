@@ -3,6 +3,7 @@ package nl.hiddebalestra.findmyandroid
 import android.app.admin.DeviceAdminReceiver
 import android.content.Context
 import android.content.Intent
+import nl.hiddebalestra.device_admin_bridge.DebugNotifier
 import nl.hiddebalestra.device_admin_bridge.DeviceAdminPrefs
 
 /**
@@ -20,5 +21,11 @@ class SecurityDeviceAdminReceiver : DeviceAdminReceiver() {
     override fun onPasswordFailed(context: Context, intent: Intent) {
         super.onPasswordFailed(context, intent)
         DeviceAdminPrefs.recordFailedUnlockAttempt(context)
+        // Settings > Debug: an immediate, unconditional notification so the
+        // user can confirm this receiver is actually firing on their device,
+        // independent of the threshold/upload pipeline above.
+        if (DeviceAdminPrefs.isDebugNotifyEnabled(context)) {
+            DebugNotifier.notifyFailedAttemptDetected(context)
+        }
     }
 }

@@ -8,6 +8,8 @@ class FakeDeviceAdminBridge extends DeviceAdminBridge {
   bool pendingTrigger;
   int? lastThreshold;
   int consumeCallCount = 0;
+  bool? lastDebugNotifyEnabled;
+  int sendTestNotificationCallCount = 0;
 
   FakeDeviceAdminBridge({this.activeValue = true, this.pendingTrigger = false});
 
@@ -28,5 +30,15 @@ class FakeDeviceAdminBridge extends DeviceAdminBridge {
     final wasPending = pendingTrigger;
     pendingTrigger = false;
     return wasPending;
+  }
+
+  @override
+  Future<void> setDebugNotifyEnabled(bool enabled) async {
+    lastDebugNotifyEnabled = enabled;
+  }
+
+  @override
+  Future<void> sendTestNotification() async {
+    sendTestNotificationCallCount++;
   }
 }

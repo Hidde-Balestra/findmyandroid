@@ -74,6 +74,17 @@ class DeviceAdminBridgePlugin :
 
             "consumePendingTrigger" -> result.success(DeviceAdminPrefs.consumePendingTrigger(appContext))
 
+            "setDebugNotifyEnabled" -> {
+                val enabled = (call.argument<Boolean>("enabled")) ?: false
+                DeviceAdminPrefs.setDebugNotifyEnabled(appContext, enabled)
+                result.success(null)
+            }
+
+            "sendTestNotification" -> {
+                DebugNotifier.notifyFailedAttemptDetected(appContext)
+                result.success(null)
+            }
+
             else -> result.notImplemented()
         }
     }

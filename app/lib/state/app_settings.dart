@@ -70,3 +70,38 @@ final securitySnapshotThresholdProvider =
     StateNotifierProvider<SecuritySnapshotThresholdNotifier, int>(
   (ref) => SecuritySnapshotThresholdNotifier(),
 );
+
+const _debugLockscreenNotifyPrefsKey = 'debug_lockscreen_notify_enabled';
+
+/// Settings → Debug: when true, the native Device Admin receiver posts an
+/// immediate system notification on every failed lock-screen attempt,
+/// independent of the security-snapshot threshold and the up-to-5-minute
+/// background poll — a diagnostic aid, not part of the actual snapshot
+/// feature. Off by default. Also pushed to the native side for the same
+/// reason as [SecuritySnapshotThresholdNotifier]'s threshold.
+class DebugLockscreenNotifyNotifier extends StateNotifier<bool> {
+  final DeviceAdminBridge _deviceAdminBridge;
+
+  DebugLockscreenNotifyNotifier({DeviceAdminBridge? deviceAdminBridge})
+      : _deviceAdminBridge = deviceAdminBridge ?? DeviceAdminBridge(),
+        super(false) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getBool(_debugLockscreenNotifyPrefsKey) ?? false;
+    unawaited(_deviceAdminBridge.setDebugNotifyEnabled(state));
+  }
+
+  Future<void> setEnabled(bool enabled) async {
+    state = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_debugLockscreenNotifyPrefsKey, enabled);
+    unawaited(_deviceAdminBridge.setDebugNotifyEnabled(enabled));
+  }
+}
+
+final debugLockscreenNotifyProvider = StateNotifierProvider<DebugLockscreenNotifyNotifier, bool>(
+  (ref) => DebugLockscreenNotifyNotifier(),
+);

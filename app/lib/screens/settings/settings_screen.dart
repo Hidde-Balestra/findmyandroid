@@ -11,6 +11,7 @@ import '../../services/security_capture_service.dart';
 import '../../services/update_service.dart';
 import '../../state/app_settings.dart';
 import '../../state/providers.dart';
+import 'debug_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -201,6 +202,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBin
           ),
           const _SecuritySnapshotThresholdTile(),
           const _SecuritySnapshotStatusTile(),
+          ListTile(
+            leading: const Icon(Icons.bug_report_outlined),
+            title: const Text('Debug options'),
+            subtitle: const Text('Diagnostic tools for troubleshooting the lock-screen trigger'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const DebugScreen()),
+            ),
+          ),
           const Divider(),
           const _SectionHeader(title: 'Updates'),
           const _UpdatesSection(),

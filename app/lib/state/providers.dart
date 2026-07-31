@@ -1,3 +1,4 @@
+import 'package:device_admin_bridge/device_admin_bridge.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +19,7 @@ final permissionServiceProvider = Provider((ref) => PermissionService());
 final updateServiceProvider = Provider((ref) => UpdateService());
 final ringServiceProvider = Provider((ref) => RingService());
 final failedAttemptTrackerProvider = Provider((ref) => FailedAttemptTracker());
+final deviceAdminBridgeProvider = Provider((ref) => DeviceAdminBridge());
 
 /// Captures+uploads a security snapshot after too many failed login
 /// attempts (see FailedAttemptTracker/SecuritySnapshotThresholdNotifier).

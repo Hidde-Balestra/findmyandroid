@@ -19,6 +19,7 @@ object DeviceAdminPrefs {
     private const val KEY_FAILED_COUNT = "failed_count"
     private const val KEY_THRESHOLD = "threshold"
     private const val KEY_PENDING_TRIGGER = "pending_trigger"
+    private const val KEY_DEBUG_NOTIFY_ENABLED = "debug_notify_enabled"
 
     /** 0 disables the feature entirely, matching the Dart-side default. */
     private const val DEFAULT_THRESHOLD = 1
@@ -50,6 +51,14 @@ object DeviceAdminPrefs {
         if (pending) prefs.edit().putBoolean(KEY_PENDING_TRIGGER, false).apply()
         return pending
     }
+
+    fun setDebugNotifyEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_DEBUG_NOTIFY_ENABLED, enabled).apply()
+    }
+
+    /** Debug aid, see DeviceAdminBridge.setDebugNotifyEnabled -- unrelated to [recordFailedUnlockAttempt]'s threshold logic. */
+    fun isDebugNotifyEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_DEBUG_NOTIFY_ENABLED, false)
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
