@@ -80,10 +80,6 @@ class SecurityCaptureService {
           debugPrint('[SecurityCapture] No photo captured (no camera available on this device)');
         }
       } catch (e) {
-        // Notably: the official `camera` plugin can't run from the headless
-        // background isolate at all (see CameraPhotoCapturer's doc comment)
-        // — this is where that shows up as a caught, logged failure rather
-        // than a silent null.
         debugPrint('[SecurityCapture] Photo capture failed: $e');
       }
       String? photoCiphertext;

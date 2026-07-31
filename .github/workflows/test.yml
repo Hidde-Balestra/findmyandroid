@@ -29,6 +29,10 @@ jobs:
         working-directory: packages/device_admin_bridge
         run: flutter pub get
 
+      - name: Install camera_bridge plugin dependencies
+        working-directory: packages/camera_bridge
+        run: flutter pub get
+
       - name: Analyze
         working-directory: app
         run: flutter analyze
@@ -43,6 +47,10 @@ jobs:
 
       - name: Run device_admin_bridge plugin tests
         working-directory: packages/device_admin_bridge
+        run: flutter test
+
+      - name: Run camera_bridge plugin tests
+        working-directory: packages/camera_bridge
         run: flutter test
 
   backend:

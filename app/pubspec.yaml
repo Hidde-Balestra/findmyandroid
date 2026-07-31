@@ -30,7 +30,6 @@ dependencies:
   latlong2: ^0.9.1
   shared_preferences: ^2.3.4
   qr_flutter: ^4.1.0
-  camera: ^0.11.0+2
 
   # Local plugin: reads location via Android's built-in LocationManager,
   # deliberately bypassing Google Play Services / the fused location API.
@@ -41,6 +40,13 @@ dependencies:
   # feature can also trigger on failed lock-screen unlock attempts.
   device_admin_bridge:
     path: ../packages/device_admin_bridge
+
+  # Local plugin: captures a front-camera still via Camera2 directly (no
+  # Activity needed, unlike the official `camera` package), so the security
+  # snapshot can actually get a photo from the headless background isolate
+  # the lock-screen trigger runs in.
+  camera_bridge:
+    path: ../packages/camera_bridge
 
 dev_dependencies:
   flutter_test:

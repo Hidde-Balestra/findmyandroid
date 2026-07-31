@@ -12,11 +12,13 @@ A self-hosted, privacy-first "find my device" system for Android — without Goo
 ## Repository layout
 
 ```
-app/                    Flutter app (Android)
-packages/location_bridge/  Local plugin: LocationManager bridge, no Play Services
-backend/api/            PHP REST API
-backend/sql/schema.sql  Database schema
-backend/web/            Static web viewer (view/ring a device from any browser)
+app/                          Flutter app (Android)
+packages/location_bridge/     Local plugin: LocationManager bridge, no Play Services
+packages/device_admin_bridge/ Local plugin: lock-screen failed-unlock detection
+packages/camera_bridge/       Local plugin: front-camera capture via Camera2, no Activity needed
+backend/api/                  PHP REST API
+backend/sql/schema.sql        Database schema
+backend/web/                  Static web viewer (view/ring a device from any browser)
 ```
 
 ## How authentication works
@@ -46,7 +48,7 @@ Two independent triggers feed the same `SecurityCaptureService`, which takes one
 
 Both triggers share one configurable threshold (Settings → Security snapshot, default 1 failed attempt, 0 disables both entirely).
 
-**Known limitation: the photo only ever comes from the in-app trigger.** The official `camera` Flutter plugin's Android implementation requires a live Activity to check/request camera permission (see `CameraAndroidCameraxPlugin`/`SystemServicesManager` in the `camera_android_camerax` package) and throws otherwise — even when permission is already granted. The in-app login trigger runs in the app's own foreground isolate, so it has one; the lock-screen trigger runs entirely in the headless background service (`flutter_background_service`), which never has an Activity attached, so camera capture there always fails. `CameraPhotoCapturer` no longer swallows that failure silently — the real exception is logged (visible via `adb logcat` and in Settings → "Last snapshot attempt") — but a lock-screen-triggered event will still only ever contain a location, never a photo. Working around this would mean momentarily launching a real (if invisible) Activity from the background at unlock-failure time, which brings its own reliability/UX trade-offs and hasn't been built.
+**Why the photo capture is a custom plugin, not the official `camera` package.** The official `camera` Flutter plugin's Android implementation requires a live Activity to check/request camera permission (see `CameraAndroidCameraxPlugin`/`SystemServicesManager` in the `camera_android_camerax` package) and throws otherwise — even when permission is already granted. That's fine for the in-app login trigger (it runs in the app's own foreground isolate, so it has one), but the lock-screen trigger runs entirely in the headless background service (`flutter_background_service`), which never has an Activity attached — so with that plugin, a lock-screen-triggered snapshot could only ever get a location, never a photo. [`packages/camera_bridge`](packages/camera_bridge) replaces it with a small direct Camera2 implementation (open the front camera, one still capture, close it — see `FrontCameraCapturer.kt`), which only needs a `Context`, not an Activity, so both triggers can actually capture a photo. Any capture failure (permission not granted, camera busy, timeout) is logged rather than swallowed — visible via `adb logcat` and in Settings → "Last snapshot attempt".
 
 This is deliberately **not** built to be covert or undetectable:
 - Camera permission must be explicitly granted in Settings — Android's own runtime permission dialog is the transparency mechanism here, and it's listed alongside every other permission this app requests.
