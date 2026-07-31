@@ -2,7 +2,19 @@ name: findmyandroid
 description: "Find My Android - a privacy-first, Google-Play-Services-free device locator."
 publish_to: 'none'
 
-version: 0.4.0+12
+# The build number (versionCode) jumps to 5000 here on purpose: every
+# release through v0.3.2 used `flutter build apk --split-per-abi`, which
+# adds a per-ABI offset on top of the actual build number (armeabi-v7a
+# +1000, arm64-v8a +2000, x86_64 +4000) -- so anyone who installed the
+# arm64-v8a build of v0.3.2 (build 10) actually has versionCode 2010
+# installed, and the x86_64 build would be 4010. Since v0.3.3 switched to
+# one universal APK with no such offset, continuing to increment normally
+# from 12 would make every new release look like a downgrade to Android
+# and silently fail to install over an old split build ("App not
+# installed", no further detail) for anyone still on v0.3.2 or earlier.
+# 5000 clears the highest possible previously-installed value (4010) with
+# room to spare; every later release just increments normally from here.
+version: 0.4.1+5000
 
 environment:
   sdk: ^3.11.4
