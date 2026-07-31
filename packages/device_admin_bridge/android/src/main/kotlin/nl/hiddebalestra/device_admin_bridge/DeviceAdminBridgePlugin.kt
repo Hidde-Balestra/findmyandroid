@@ -5,6 +5,8 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -27,6 +29,32 @@ class DeviceAdminBridgePlugin :
     FlutterPlugin,
     MethodCallHandler,
     ActivityAware {
+    companion object {
+        // Every engine currently attached (typically one: the background
+        // service's, since that's the one alive whenever reporting is
+        // running -- the UI engine only overlaps with it while the app is
+        // also open). Guarded by its own lock since onPasswordFailed() can
+        // fire from a different thread than any engine's own callbacks.
+        private val attachedChannels = mutableSetOf<MethodChannel>()
+        private val mainHandler = Handler(Looper.getMainLooper())
+
+        /** Called from `SecurityDeviceAdminReceiver.onPasswordFailed()` the
+         * moment the failed-attempt threshold is crossed, so the background
+         * isolate's `LockscreenTriggerHandler` can react immediately instead
+         * of waiting for its next 5-minute poll. A no-op if no engine
+         * happens to be attached right now (e.g. the reporting service isn't
+         * running) -- DeviceAdminPrefs' pending-trigger flag is still set
+         * either way, so the next poll picks it up as a fallback. */
+        fun notifyLockscreenFailureNow() {
+            mainHandler.post {
+                val channels = synchronized(attachedChannels) { attachedChannels.toList() }
+                for (channel in channels) {
+                    channel.invokeMethod("lockscreenFailureDetected", null)
+                }
+            }
+        }
+    }
+
     private lateinit var channel: MethodChannel
     private lateinit var appContext: Context
     private lateinit var adminComponent: ComponentName
@@ -40,6 +68,7 @@ class DeviceAdminBridgePlugin :
         )
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "nl.hiddebalestra.device_admin_bridge/device_admin")
         channel.setMethodCallHandler(this)
+        synchronized(attachedChannels) { attachedChannels.add(channel) }
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
@@ -91,6 +120,7 @@ class DeviceAdminBridgePlugin :
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+        synchronized(attachedChannels) { attachedChannels.remove(channel) }
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {

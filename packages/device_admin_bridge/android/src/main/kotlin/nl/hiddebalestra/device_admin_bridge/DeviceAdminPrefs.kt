@@ -24,10 +24,14 @@ object DeviceAdminPrefs {
     /** 0 disables the feature entirely, matching the Dart-side default. */
     private const val DEFAULT_THRESHOLD = 1
 
-    fun recordFailedUnlockAttempt(context: Context) {
+    /** Returns true if this attempt just crossed the threshold (i.e. the
+     * pending-trigger flag was newly set) -- the caller uses that to decide
+     * whether to also push an immediate notification, rather than relying
+     * solely on the next background poll. */
+    fun recordFailedUnlockAttempt(context: Context): Boolean {
         val prefs = prefs(context)
         val threshold = prefs.getInt(KEY_THRESHOLD, DEFAULT_THRESHOLD)
-        if (threshold <= 0) return
+        if (threshold <= 0) return false
 
         val count = prefs.getInt(KEY_FAILED_COUNT, 0) + 1
         if (count >= threshold) {
@@ -35,9 +39,10 @@ object DeviceAdminPrefs {
                 .putInt(KEY_FAILED_COUNT, 0)
                 .putBoolean(KEY_PENDING_TRIGGER, true)
                 .apply()
-        } else {
-            prefs.edit().putInt(KEY_FAILED_COUNT, count).apply()
+            return true
         }
+        prefs.edit().putInt(KEY_FAILED_COUNT, count).apply()
+        return false
     }
 
     fun setThreshold(context: Context, threshold: Int) {

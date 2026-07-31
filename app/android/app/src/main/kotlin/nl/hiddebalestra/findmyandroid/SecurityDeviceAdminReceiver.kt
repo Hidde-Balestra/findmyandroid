@@ -4,6 +4,7 @@ import android.app.admin.DeviceAdminReceiver
 import android.content.Context
 import android.content.Intent
 import nl.hiddebalestra.device_admin_bridge.DebugNotifier
+import nl.hiddebalestra.device_admin_bridge.DeviceAdminBridgePlugin
 import nl.hiddebalestra.device_admin_bridge.DeviceAdminPrefs
 
 /**
@@ -20,12 +21,20 @@ import nl.hiddebalestra.device_admin_bridge.DeviceAdminPrefs
 class SecurityDeviceAdminReceiver : DeviceAdminReceiver() {
     override fun onPasswordFailed(context: Context, intent: Intent) {
         super.onPasswordFailed(context, intent)
-        DeviceAdminPrefs.recordFailedUnlockAttempt(context)
+        val thresholdCrossed = DeviceAdminPrefs.recordFailedUnlockAttempt(context)
         // Settings > Debug: an immediate, unconditional notification so the
         // user can confirm this receiver is actually firing on their device,
         // independent of the threshold/upload pipeline above.
         if (DeviceAdminPrefs.isDebugNotifyEnabled(context)) {
             DebugNotifier.notifyFailedAttemptDetected(context)
+        }
+        // Nudges the background isolate to react right away instead of
+        // waiting for its next 5-minute poll -- see
+        // DeviceAdminBridge.listenForImmediateLockscreenTrigger. Only fires
+        // once the threshold is actually crossed, matching the configured
+        // "trigger after N failed attempts" setting exactly.
+        if (thresholdCrossed) {
+            DeviceAdminBridgePlugin.notifyLockscreenFailureNow()
         }
     }
 }

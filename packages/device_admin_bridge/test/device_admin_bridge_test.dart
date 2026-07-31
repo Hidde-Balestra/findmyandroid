@@ -83,4 +83,32 @@ void main() {
 
     expect(received!.method, 'sendTestNotification');
   });
+
+  group('listenForImmediateLockscreenTrigger', () {
+    test('runs the callback when the native side calls lockscreenFailureDetected', () async {
+      var callCount = 0;
+      DeviceAdminBridge().listenForImmediateLockscreenTrigger(() async {
+        callCount++;
+      });
+
+      final call = const MethodCall('lockscreenFailureDetected');
+      final data = const StandardMethodCodec().encodeMethodCall(call);
+      await messenger.handlePlatformMessage(channel.name, data, (_) {});
+
+      expect(callCount, 1);
+    });
+
+    test('ignores an unrelated method call', () async {
+      var callCount = 0;
+      DeviceAdminBridge().listenForImmediateLockscreenTrigger(() async {
+        callCount++;
+      });
+
+      final call = const MethodCall('somethingElse');
+      final data = const StandardMethodCodec().encodeMethodCall(call);
+      await messenger.handlePlatformMessage(channel.name, data, (_) {});
+
+      expect(callCount, 0);
+    });
+  });
 }

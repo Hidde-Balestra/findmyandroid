@@ -66,6 +66,21 @@ void _onStart(ServiceInstance service) {
     securityCaptureService: SecurityCaptureService(photoCapturer: CameraPhotoCapturer()),
   );
 
+  Future<void> checkLockscreenTrigger() async {
+    // Piggybacks on the same 5-minute cadence as location reporting and
+    // "play sound" polling — kept in its own try/catch so a failure here
+    // (or in the location check-in below) never affects the other. Also
+    // called directly the moment a failed lock-screen attempt crosses the
+    // threshold (see listenForImmediateLockscreenTrigger below), so this
+    // usually runs well before the next scheduled tick.
+    try {
+      await lockscreenTriggerHandler.checkAndHandle();
+    } catch (_) {
+      // SecurityCaptureService already records its own failure status;
+      // nothing more to do here.
+    }
+  }
+
   Future<void> tick() async {
     try {
       final deviceToken = await secureStore.deviceToken;
@@ -116,19 +131,20 @@ void _onStart(ServiceInstance service) {
       (await SharedPreferences.getInstance()).setString(lastCheckInPrefsKey, summary);
     }
 
-    // Piggybacks on the same 5-minute cadence as location reporting and
-    // "play sound" polling — kept in its own try/catch so a failure here
-    // (or in the location check-in above) never affects the other.
-    try {
-      await lockscreenTriggerHandler.checkAndHandle();
-    } catch (_) {
-      // SecurityCaptureService already records its own failure status;
-      // nothing more to do here.
-    }
+    await checkLockscreenTrigger();
   }
 
   unawaited(tick());
   Timer.periodic(reportingInterval, (_) => unawaited(tick()));
+
+  // Reacts the moment SecurityDeviceAdminReceiver.onPasswordFailed() crosses
+  // the threshold, instead of waiting up to 5 minutes for the next tick.
+  lockscreenTriggerHandler.deviceAdminBridge.listenForImmediateLockscreenTrigger(checkLockscreenTrigger);
+
+  // Manual "check in now" (Home screen button): runs the same tick a
+  // failed-attempt/ring/location check-in would run on its own schedule,
+  // just on demand instead of waiting up to 5 minutes.
+  service.on('checkInNow').listen((_) => unawaited(tick()));
 
   service.on('stopService').listen((_) => service.stopSelf());
 }

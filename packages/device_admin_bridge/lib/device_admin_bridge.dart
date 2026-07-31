@@ -37,9 +37,30 @@ class DeviceAdminBridge {
 
   /// Returns true (and atomically clears the flag) if the native receiver
   /// has recorded enough consecutive failed lock-screen attempts to cross
-  /// the configured threshold since this was last called.
+  /// the configured threshold since this was last called. Normally polled
+  /// from the 5-minute background tick (see LockscreenTriggerHandler) —
+  /// [listenForImmediateLockscreenTrigger] below shortcuts that wait when
+  /// possible.
   Future<bool> consumePendingLockscreenTrigger() async {
     return (await _channel.invokeMethod<bool>('consumePendingTrigger')) ?? false;
+  }
+
+  /// Registers [onTriggered] to run as soon as the native receiver crosses
+  /// the failed-lock-screen-attempt threshold, instead of waiting for the
+  /// next 5-minute poll. Works because `SecurityDeviceAdminReceiver` pushes
+  /// a "lockscreenFailureDetected" call back into whichever engine(s) this
+  /// channel is currently attached to (see DeviceAdminBridgePlugin) the
+  /// moment the threshold is crossed -- this only has any effect from the
+  /// background isolate, since that's the one with a matching engine
+  /// attached whenever the reporting service is running. The 5-minute poll
+  /// still exists as a fallback for the (rare) case where the background
+  /// service isn't running at the exact moment of the failed attempt.
+  void listenForImmediateLockscreenTrigger(Future<void> Function() onTriggered) {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'lockscreenFailureDetected') {
+        await onTriggered();
+      }
+    });
   }
 
   /// Debug aid (Settings → Debug): when enabled, the native receiver posts

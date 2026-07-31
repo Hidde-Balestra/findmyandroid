@@ -43,6 +43,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  Future<void> _checkInNow() async {
+    ref.read(backgroundServiceProvider).invoke('checkInNow');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Check-in requested — tap "Refresh status" in a few seconds.')),
+    );
+  }
+
   Future<void> _testRingNow() async {
     final ringService = ref.read(ringServiceProvider);
     await ringService.init();
@@ -124,7 +131,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: const Text('Start reporting'),
                     )
                   else
-                    TextButton(onPressed: _loadLastCheckIn, child: const Text('Refresh status')),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton(onPressed: _loadLastCheckIn, child: const Text('Refresh status')),
+                        if (isReporting)
+                          TextButton(onPressed: _checkInNow, child: const Text('Check in now')),
+                      ],
+                    ),
                 ],
               ),
             ),
