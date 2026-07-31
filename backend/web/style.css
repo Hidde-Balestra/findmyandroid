@@ -101,3 +101,26 @@ button:hover {
   font-size: 14px;
   opacity: 0.8;
 }
+
+#security-log {
+  margin-top: 24px;
+}
+
+.security-event {
+  border: 1px solid #8884;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.security-event img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin-top: 8px;
+  display: block;
+}
+
+.security-event-time {
+  font-weight: 600;
+  margin: 0;
+}

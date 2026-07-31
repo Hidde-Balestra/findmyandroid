@@ -33,6 +33,9 @@ const els = {
   ringButton: document.getElementById('ring-button'),
   ringStatus: document.getElementById('ring-status'),
   logoutButton: document.getElementById('logout-button'),
+  securityLogButton: document.getElementById('security-log-button'),
+  securityLog: document.getElementById('security-log'),
+  securityEvents: document.getElementById('security-events'),
 };
 
 function saveSession() {
@@ -148,6 +151,11 @@ async function showDevice(device) {
   els.ringButton.onclick = () => ringDevice(device.id);
 
   const key = await deriveKey(session.code, session.salt);
+
+  els.securityLog.classList.add('hidden');
+  els.securityEvents.innerHTML = '';
+  els.securityLogButton.onclick = () => loadSecurityEvents(device.id, key);
+
   const { locations } = await withSession(() => Api.listLocations(session.sessionToken, device.id));
 
   const points = [];
@@ -179,6 +187,62 @@ async function ringDevice(deviceId) {
     els.ringStatus.textContent = 'Sound queued — plays next time this device checks in (within 5 min).';
   } catch (err) {
     els.ringStatus.textContent = `Failed: ${err.message}`;
+  }
+}
+
+/** Loads, decrypts, and renders this device's security-snapshot log (see
+ * app/lib/screens/home/security_events_screen.dart for the Android
+ * equivalent) — a front-camera photo and/or location captured after too
+ * many failed login attempts. photoCiphertext decrypts to a base64 JPEG
+ * string directly (the app base64-encodes the photo before encrypting it,
+ * so no extra decoding step is needed here). */
+async function loadSecurityEvents(deviceId, key) {
+  els.securityLog.classList.remove('hidden');
+  els.securityEvents.innerHTML = '<p>Loading…</p>';
+
+  try {
+    const { events } = await withSession(() => Api.listSecurityEvents(session.sessionToken, deviceId));
+    if (events.length === 0) {
+      els.securityEvents.innerHTML = '<p>No security events logged for this device.</p>';
+      return;
+    }
+
+    els.securityEvents.innerHTML = '';
+    for (const event of events) {
+      const card = document.createElement('div');
+      card.className = 'security-event';
+
+      const time = document.createElement('p');
+      time.className = 'security-event-time';
+      time.textContent = new Date(event.capturedAt).toLocaleString();
+      card.appendChild(time);
+
+      if (event.photoCiphertext) {
+        try {
+          const photoBase64 = await decryptBlob(event.photoCiphertext, key);
+          const img = document.createElement('img');
+          img.src = `data:image/jpeg;base64,${photoBase64}`;
+          card.appendChild(img);
+        } catch {
+          // Skip a photo that fails to decrypt/authenticate.
+        }
+      }
+
+      if (event.locationCiphertext) {
+        try {
+          const loc = JSON.parse(await decryptBlob(event.locationCiphertext, key));
+          const locText = document.createElement('p');
+          locText.textContent = `Location: ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`;
+          card.appendChild(locText);
+        } catch {
+          // Skip a location that fails to decrypt/authenticate.
+        }
+      }
+
+      els.securityEvents.appendChild(card);
+    }
+  } catch (err) {
+    els.securityEvents.innerHTML = `<p class="error">Could not load security events: ${err.message}</p>`;
   }
 }
 

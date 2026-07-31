@@ -31,4 +31,8 @@ const Api = {
   listLocations: (sessionToken, deviceId, limit = 50) =>
     request('GET', `locations.php?deviceId=${encodeURIComponent(deviceId)}&limit=${limit}`, { token: sessionToken }),
   queueRing: (sessionToken, deviceId) => request('POST', 'ring.php', { token: sessionToken, body: { deviceId } }),
+  listSecurityEvents: (sessionToken, deviceId, limit = 20) =>
+    request('GET', `security_events.php?deviceId=${encodeURIComponent(deviceId)}&limit=${limit}`, {
+      token: sessionToken,
+    }),
 };
