@@ -37,6 +37,14 @@ jobs:
         working-directory: app
         run: flutter test
 
+      - name: Run location_bridge plugin tests
+        working-directory: packages/location_bridge
+        run: flutter test
+
+      - name: Run device_admin_bridge plugin tests
+        working-directory: packages/device_admin_bridge
+        run: flutter test
+
   backend:
     runs-on: ubuntu-latest
     steps:
@@ -52,3 +60,6 @@ jobs:
           for f in $(find backend/api -name "*.php"); do
             php -l "$f"
           done
+
+      - name: Run Totp tests
+        run: php backend/tests/totp_test.php

@@ -73,12 +73,22 @@ class SecurityCaptureService {
       final key = cryptoService.keyFromBytes(lekBytes);
       final capturedAt = DateTime.now();
 
-      final photoBytes = await photoCapturer.captureFrontPhoto();
+      Uint8List? photoBytes;
+      try {
+        photoBytes = await photoCapturer.captureFrontPhoto();
+        if (photoBytes == null) {
+          debugPrint('[SecurityCapture] No photo captured (no camera available on this device)');
+        }
+      } catch (e) {
+        // Notably: the official `camera` plugin can't run from the headless
+        // background isolate at all (see CameraPhotoCapturer's doc comment)
+        // — this is where that shows up as a caught, logged failure rather
+        // than a silent null.
+        debugPrint('[SecurityCapture] Photo capture failed: $e');
+      }
       String? photoCiphertext;
       if (photoBytes != null) {
         photoCiphertext = await cryptoService.encrypt(base64Encode(photoBytes), key);
-      } else {
-        debugPrint('[SecurityCapture] No photo captured (camera permission denied, no camera, or capture failed)');
       }
 
       String? locationCiphertext;

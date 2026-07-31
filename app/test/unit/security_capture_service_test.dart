@@ -7,8 +7,10 @@ import 'package:findmyandroid/services/security_capture_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:location_bridge/location_bridge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../fakes/fake_location_bridge.dart';
 import '../fakes/fake_photo_capturer.dart';
 import '../fakes/fake_secure_store.dart';
 
@@ -64,6 +66,42 @@ void main() {
       );
 
       await expectLater(service.captureAndUpload(), completes);
+    });
+
+    test('a thrown photo-capture error does not stop the location upload', () async {
+      // Regression: the official camera plugin can only run with a live
+      // Activity attached, so calling this from the headless background
+      // isolate (the lock-screen trigger) always throws. That must not
+      // abort the whole capture -- location should still upload.
+      http.Request? capturedRequest;
+      final service = SecurityCaptureService(
+        photoCapturer: FakePhotoCapturer(throwsError: Exception('Activity must be set to request camera permissions.')),
+        locationBridge: FakeLocationBridge(
+          fix: LocationFix(latitude: 52.1, longitude: 5.1, timestamp: DateTime.now(), provider: 'gps'),
+        ),
+        secureStore: FakeSecureStore(
+          deviceTokenValue: 'device-token',
+          lekBytesValue: lekBytes,
+          serverBaseUrlValue: 'https://example.invalid',
+        ),
+        apiClientBuilder: (baseUrl) => ApiClient(
+          baseUrl: baseUrl,
+          httpClient: MockClient((request) async {
+            capturedRequest = request;
+            return http.Response('{"message":"stored"}', 201);
+          }),
+        ),
+      );
+
+      await service.captureAndUpload();
+
+      expect(capturedRequest, isNotNull);
+      final body = jsonDecode(capturedRequest!.body) as Map<String, dynamic>;
+      expect(body.containsKey('photoCiphertext'), isFalse);
+      expect(body['locationCiphertext'], isNotNull);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(lastSecuritySnapshotStatusPrefsKey), contains('Uploaded'));
     });
 
     test('uploads an encrypted photo that decrypts back to the captured bytes', () async {

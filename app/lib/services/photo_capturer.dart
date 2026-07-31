@@ -17,25 +17,34 @@ abstract class PhotoCapturer {
 /// audible shutter sound regardless of what an app does. This class doesn't
 /// attempt to suppress either — those are OS-level anti-covert-surveillance
 /// protections, not bugs to work around.
+///
+/// Known hard limitation: the official `camera` plugin's Android
+/// implementation requires a live Activity to check/request camera
+/// permission (see CameraAndroidCameraxPlugin/SystemServicesManager) and
+/// throws `PlatformException`/`IllegalStateException` otherwise — even when
+/// permission is already granted. That means this only works when called
+/// from the app's own foreground isolate (the in-app failed-login trigger);
+/// called from the headless background service (the lock-screen trigger),
+/// it will always fail. Exceptions are deliberately *not* swallowed here —
+/// [SecurityCaptureService] logs the real cause instead of just recording
+/// "no photo", which otherwise looks indistinguishable from a permission or
+/// hardware problem.
 class CameraPhotoCapturer implements PhotoCapturer {
   @override
   Future<Uint8List?> captureFrontPhoto() async {
-    CameraController? controller;
+    final cameras = await availableCameras();
+    if (cameras.isEmpty) return null;
+    final front = cameras.firstWhere(
+      (camera) => camera.lensDirection == CameraLensDirection.front,
+      orElse: () => cameras.first,
+    );
+    final controller = CameraController(front, ResolutionPreset.medium, enableAudio: false);
     try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) return null;
-      final front = cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.front,
-        orElse: () => cameras.first,
-      );
-      controller = CameraController(front, ResolutionPreset.medium, enableAudio: false);
       await controller.initialize();
       final file = await controller.takePicture();
       return await file.readAsBytes();
-    } catch (_) {
-      return null;
     } finally {
-      await controller?.dispose();
+      await controller.dispose();
     }
   }
 }
