@@ -14,7 +14,7 @@ publish_to: 'none'
 # installed", no further detail) for anyone still on v0.3.2 or earlier.
 # 5000 clears the highest possible previously-installed value (4010) with
 # room to spare; every later release just increments normally from here.
-version: 0.4.1+5000
+version: 0.4.2+5001
 
 environment:
   sdk: ^3.11.4
